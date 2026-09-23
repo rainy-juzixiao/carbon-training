@@ -1,0 +1,57 @@
+/* app.css */
+.bpmn-icon-task.red {
+    color: #cc0000 !important;
+}
+
+/* app.css */
+.icon-custom {
+    /* 定义一个公共的类名 */
+    border-radius: 50%;
+    background-size: 65%;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.icon-custom.lindaidai-task {
+    /* 加上背景图 */
+    background-image: url('https://p5.itc.cn/images01/20210207/b29f998f6e7f42d5b24cacaa4e2b74e0.jpeg');
+}
+
+
+.EP00001 {
+    background-image: url('../industrialIcons/导航_工业APP.png');
+}
+.EP00002 {
+    background-image: url('../industrialIcons/18工业工程_定位.png');
+}
+.EP00003 {
+    background-image: url('../industrialIcons/__重点工业企业减排.png');
+}
+.EP00004 {
+    background-image: url('../industrialIcons/工业10.png');
+}
+.EP00005 {
+    background-image: url('../industrialIcons/一般工业固体废物业务申报.png');
+}
+.EP00006 {
+    background-image: url('../industrialIcons/工业控制.png');
+}
+.EP00007 {
+    background-image: url('../industrialIcons/导航_工业APP.png');
+}
+.EP00008 {
+    background-image: url('../industrialIcons/工业物联网设备.png');
+}
+.EP00009 {
+    background-image: url('../industrialIcons/快速接入工业设备.png');
+}
+.EP000010 {
+    background-image: url('../industrialIcons/治河工业.png');
+}
+.EP000011 {
+    background-image: url('../industrialIcons/工业设计-2.png');
+}
+.djs-hit{
+    background: red !important;
+    border: 1px solid red;
+}
