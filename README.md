@@ -1,5 +1,6 @@
 # 内容
 
+- `assets/` — 素材
 - `contest/` — 竞赛题目
 - `backend/` — 初始后端
 - `frontend_administrator/` — 管理端前端
