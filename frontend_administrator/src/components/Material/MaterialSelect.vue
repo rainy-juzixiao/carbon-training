@@ -153,7 +153,7 @@ export default {
       listMaterialCategory().then(response => {
         this.categoryOptions = [];
         const data = { id: 0, name: '分类', children: [] };
-        data.children = this.handleTree(response.data, "id", "parentId");
+        data.children = this.handleTree(response.rows, "id", "parentId");
         this.categoryOptions.push(data);
       });
     },

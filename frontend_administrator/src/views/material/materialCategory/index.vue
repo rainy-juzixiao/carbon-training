@@ -124,7 +124,7 @@ export default {
     getList() {
       this.loading = true;
       listMaterialCategory(this.queryParams).then(response => {
-        this.materialCategoryList = this.handleTree(response.data, "id", "parentId");
+        this.materialCategoryList = this.handleTree(response.rows, "id", "parentId");
         this.loading = false;
       });
     },
@@ -144,7 +144,7 @@ export default {
       listMaterialCategory().then(response => {
         this.materialCategoryOptions = [];
         const data = {id: 0, name: '顶级节点', children: []};
-        data.children = this.handleTree(response.data, "id", "parentId");
+        data.children = this.handleTree(response.rows, "id", "parentId");
         this.materialCategoryOptions.push(data);
       });
     },
