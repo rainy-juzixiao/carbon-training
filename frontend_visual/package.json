@@ -15,7 +15,7 @@
     "url": "http://gitlab.neumooc.com/yiyanghealthy/healthy-management.git"
   },
   "dependencies": {
-    "@dataview/datav-vue3": "^0.0.0-test.1672506674342",
+    "@dataview/datav-vue3": "file:./dep/@dataview/datav-vue3",
     "@element-plus/icons-vue": "2.0.10",
     "@vueup/vue-quill": "1.1.0",
     "@vueuse/core": "9.5.0",
