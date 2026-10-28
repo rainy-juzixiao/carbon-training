@@ -37,3 +37,4 @@ logs/
 data/
 .claude/
 question/
+/.mcp.json
