@@ -363,17 +363,18 @@
         <el-table-column label="序号" align="center" prop="index" width="50"/>
 #foreach($column in $subTable.columns)
 #set($javaField=$column.javaField)
+#set($subFieldName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
 #set($parentheseIndex=$column.columnComment.indexOf("（"))
 #if($parentheseIndex != -1)
 #set($comment=$column.columnComment.substring(0, $parentheseIndex))
 #else
 #set($comment=$column.columnComment)
 #end
-#if($column.pk || $javaField == ${subTableFkclassName})
+#if($column.pk || $column.javaField == $subTableFkclassName)
 #elseif($column.list && $column.htmlType == "input")
         <el-table-column label="$comment" prop="${javaField}" width="150">
           <template #default="scope">
-            <el-input v-model="scope.row.$javaField" placeholder="请输入$comment"/>
+            <el-input v-model="scope.row.${javaField}" placeholder="请输入$comment"/>
           </template>
         </el-table-column>
 #elseif($column.list && $column.htmlType == "datetime")
@@ -381,7 +382,7 @@
           <template #default="scope">
             <el-date-picker
                 clearable
-                v-model="scope.row.$javaField"
+                v-model="scope.row.${javaField}"
                 type="date"
                 value-format="YYYY-MM-DD"
                 placeholder="请选择$comment"
@@ -391,7 +392,7 @@
 #elseif($column.list && ($column.htmlType == "select" || $column.htmlType == "radio") && ("" != $column.dictType && "sys_query_type" != $column.dictType))
         <el-table-column label="$comment" prop="${javaField}" width="150">
           <template #default="scope">
-            <el-select v-model="scope.row.$javaField" placeholder="请选择$comment">
+            <el-select v-model="scope.row.${javaField}" placeholder="请选择$comment">
               <el-option
                   v-for="dict in $column.dictType"
                   :key="dict.value"
@@ -402,10 +403,10 @@
           </template>
         </el-table-column>
 ##        通用查询
-#elseif($column.list && ($column.htmlType == "select") && $column.dictType == "sys_query_type" && "" != $column.dictType)
+#elseif($column.list && ($column.htmlType == "select") && $column.dictType == "sys_query_type" && "" != $column.comQuery)
         <el-table-column label="$comment" prop="${javaField}" width="180">
           <template #default="scope">
-            <el-select v-model="scope.row.$javaField" placeholder="请选择${comment}" clearable>
+            <el-select v-model="scope.row.${javaField}" placeholder="请选择${comment}" clearable>
               <el-option
                   v-for="item in  ${column.javaField}Query"
                   :key="item.dictValue"
@@ -418,7 +419,7 @@
 #elseif($column.list && ($column.htmlType == "select" || $column.htmlType == "radio") && "" == $column.dictType)
         <el-table-column label="$comment" prop="${javaField}" width="150">
           <template #default="scope">
-            <el-select v-model="scope.row.$javaField" placeholder="请选择$comment">
+            <el-select v-model="scope.row.${javaField}" placeholder="请选择$comment">
               <el-option label="请选择字典生成" value=""/>
             </el-select>
           </template>
@@ -443,11 +444,11 @@
 )
         <el-table-column label="$comment" prop="${javaField}" width="300">
           <template #default="scope">
-            <el-form-item :prop="'${javaField}.'+scope.$index+'.${javaField}'"
+            <el-form-item :prop="'${subclassName}List.'+scope.$index+'.${javaField}'"
                           :rules="rules.${javaField}">
               <el-input v-model="scope.row.${javaField}" placeholder="请选择$comment" disabled>
                 <template #append>
-                  <el-button v-no-more-click @click="select${column.htmlType}Open">选择</el-button>
+                  <el-button v-no-more-click @click="select${subClassName}${subFieldName}Open(scope.$index)">选择</el-button>
                 </template>
               </el-input>
             </el-form-item>
@@ -494,6 +495,7 @@
 #end
 #end
 #foreach($column in $subTable.columns)
+#set($subFieldName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
 #if(
     $column.htmlType == "MaterialSelect" ||
     $column.htmlType == "DeliverySelect" ||
@@ -512,8 +514,8 @@
     $column.htmlType == "RequisitionSelect" ||
     $column.htmlType == "ProductJobSelect"
 )
-  <${column.htmlType} :open="${column.htmlType}Open" @onCancel="handle${column.htmlType}Cancel"
-                      @onSelected="handle${column.htmlType}Selected">
+  <${column.htmlType} :open="${subclassName}${subFieldName}Open" @onCancel="handle${subClassName}${subFieldName}Cancel"
+                      @onSelected="handle${subClassName}${subFieldName}Selected">
   </${column.htmlType}>
 #end
 #end
@@ -697,6 +699,7 @@ const handle${column.htmlType}Selected = (row) => {
 #end
 #end
 #foreach($column in $subTable.columns)
+#set($subFieldName=$column.javaField.substring(0,1).toUpperCase() + ${column.javaField.substring(1)})
 #if(
     $column.htmlType == "MaterialSelect" ||
     $column.htmlType == "DeliverySelect" ||
@@ -715,15 +718,17 @@ const handle${column.htmlType}Selected = (row) => {
     $column.htmlType == "RequisitionSelect" ||
     $column.htmlType == "ProductJobSelect"
 )
-const ${column.htmlType}Open = ref(false);
-const handle${column.htmlType}Cancel = () => {
-  ${column.htmlType}Open.value = false;
+const ${subclassName}${subFieldName}Open = ref(false);
+const ${subclassName}${subFieldName}Index = ref(0);
+const handle${subClassName}${subFieldName}Cancel = () => {
+  ${subclassName}${subFieldName}Open.value = false;
 };
-const select${column.htmlType}Open = () => {
-  ${column.htmlType}Open.value = true;
+const select${subClassName}${subFieldName}Open = (index) => {
+  ${subclassName}${subFieldName}Index.value = index;
+  ${subclassName}${subFieldName}Open.value = true;
 };
-const handle${column.htmlType}Selected = (row) => {
-  ${column.htmlType}Open.value = false;
+const handle${subClassName}${subFieldName}Selected = (row) => {
+  ${subclassName}${subFieldName}Open.value = false;
 };
 #end
 #end
@@ -932,9 +937,9 @@ function row${subClassName}Index({ row, rowIndex }) {
 function handleAdd${subClassName}() {
   let obj = {};
 #foreach($column in $subTable.columns)
-#if($column.pk || $column.javaField == ${subTableFkclassName})
-#elseif($column.list && "" != $javaField)
-  obj.$column.javaField = "";
+#if($column.pk || $column.javaField == $subTableFkclassName)
+#elseif($column.list && "" != $column.javaField)
+  obj.${column.javaField} = "";
 #end
 #end
   ${subclassName}List.value.push(obj);
@@ -946,16 +951,16 @@ function handleDelete${subClassName}() {
     proxy.#[[$modal]]#.msgError("请先选择要删除的${subTable.functionName}数据");
   } else {
     const ${subclassName}s = ${subclassName}List.value;
-    const checked${subclassName}s = checked${subclassName}.value;
+    const checked${subClassName}s = checked${subClassName}.value;
     ${subclassName}List.value = ${subclassName}s.filter(function(item) {
-      return checked${subclassName}s.indexOf(item.index) == -1
+      return checked${subClassName}s.indexOf(item.index) == -1
     });
   }
 }
 
 /** 复选框选中数据 */
 function handle${subClassName}SelectionChange(selection) {
-  checked${subclassName}.value = selection.map(item => item.index)
+  checked${subClassName}.value = selection.map(item => item.index)
 }
 #end
 
@@ -966,7 +971,7 @@ function handleExport() {
     cancelButtonText: "取消",
     type: "warning"
   }).then(function () {
-    return export${BusinessName}(val).then(res => {
+    return export${BusinessName}(queryParams.value).then(res => {
       proxy.download(res.msg);
     });
   })
