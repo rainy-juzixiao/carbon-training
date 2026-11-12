@@ -6,22 +6,22 @@
  * @FilePath: \web-pc\src\pages\big-screen\components\item-wrap\item-wrap.vue
 -->
 <template>
-  <BorderBox13 class="lr_titles">
+  <dv-border-box-13 class="lr_titles">
     <div class="item_title" v-if="title !== ''">
       <div class="zuo"></div>
       <span class="title-inner"> &nbsp;&nbsp;{{ title }}&nbsp;&nbsp; </span>
       <div class="you"></div>
     </div>
     <div
-      :class="title !== '' ? 'item_title_content' : 'item_title_content_def'"
+        :class="title !== '' ? 'item_title_content' : 'item_title_content_def'"
     >
       <slot></slot>
     </div>
-  </BorderBox13>
+  </dv-border-box-13>
 </template>
 
 <script>
-import { BorderBox13 } from '@dataview/datav-vue3';
+import { BorderBox13 } from '@kjgl77/datav-vue3'
 export default {
   components: {
     BorderBox13
