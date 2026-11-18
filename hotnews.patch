@@ -1,0 +1,2430 @@
+diff --git a/backend/neu-carbon-bid/src/main/java/com/neu/carbon/bid/controller/BidHotNewsController.java b/backend/neu-carbon-bid/src/main/java/com/neu/carbon/bid/controller/BidHotNewsController.java
+new file mode 100644
+index 0000000..420d759
+--- /dev/null
++++ b/backend/neu-carbon-bid/src/main/java/com/neu/carbon/bid/controller/BidHotNewsController.java
+@@ -0,0 +1,176 @@
++package com.neu.carbon.bid.controller;
++
++import java.util.List;
++
++import com.neu.carbon.bid.domain.BidHotNews;
++import com.neu.carbon.bid.service.IBidHotNewsService;
++import com.neu.common.annotation.Log;
++import com.neu.common.core.controller.BaseController;
++import com.neu.common.core.domain.AjaxResult;
++import com.neu.common.core.page.TableDataInfo;
++import com.neu.common.enums.BusinessType;
++import com.neu.common.utils.poi.ExcelUtil;
++import io.swagger.annotations.Api;
++import io.swagger.annotations.ApiOperation;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.security.access.prepost.PreAuthorize;
++import org.springframework.web.bind.annotation.*;
++
++/**
++ * 热点新闻Controller
++ *
++ * @author neuedu
++ * @date 2026-01-08
++ */
++@Api(tags = {"招投标-热点新闻"})
++@RestController
++@RequestMapping("/bid/hotnews")
++public class BidHotNewsController extends BaseController
++{
++    @Autowired
++    private IBidHotNewsService bidHotNewsService;
++
++    /**
++     * 查询热点新闻列表
++     */
++    @ApiOperation("查询热点新闻列表")
++    @GetMapping("/list")
++    public TableDataInfo list(BidHotNews bidHotNews)
++    {
++        startPage();
++        List<BidHotNews> list = bidHotNewsService.selectBidHotNewsList(bidHotNews);
++        return getDataTable(list);
++    }
++
++    /**
++     * 用户端查询新闻列表（仅已发布）
++     */
++    @ApiOperation("用户端查询新闻列表")
++    @GetMapping("/front/list")
++    public TableDataInfo frontList(BidHotNews bidHotNews)
++    {
++        bidHotNews.setStatus(1);
++        startPage();
++        List<BidHotNews> list = bidHotNewsService.selectBidHotNewsList(bidHotNews);
++        return getDataTable(list);
++    }
++
++    /**
++     * 用户端查询热点排行
++     */
++    @ApiOperation("用户端查询热点排行")
++    @GetMapping("/front/rank")
++    public AjaxResult frontRank()
++    {
++        return AjaxResult.success(bidHotNewsService.selectHotRankList());
++    }
++
++    /**
++     * 用户端查询新闻详情（浏览量加一）
++     */
++    @ApiOperation("用户端查询新闻详情")
++    @GetMapping("/front/{id}")
++    public AjaxResult frontGetInfo(@PathVariable("id") Long id)
++    {
++        bidHotNewsService.increaseViewCount(id);
++        return AjaxResult.success(bidHotNewsService.selectBidHotNewsById(id));
++    }
++
++    /**
++     * 用户端点赞
++     */
++    @ApiOperation("用户端点赞")
++    @PostMapping("/front/like/{id}")
++    public AjaxResult frontLike(@PathVariable("id") Long id)
++    {
++        return toAjax(bidHotNewsService.like(id));
++    }
++
++    /**
++     * 用户端取消点赞
++     */
++    @ApiOperation("用户端取消点赞")
++    @PostMapping("/front/unlike/{id}")
++    public AjaxResult frontUnlike(@PathVariable("id") Long id)
++    {
++        return toAjax(bidHotNewsService.unlike(id));
++    }
++
++    /**
++     * 导出热点新闻列表
++     */
++    @PreAuthorize("@ss.hasPermi('bid:hotnews:export')")
++    @Log(title = "热点新闻", businessType = BusinessType.EXPORT)
++    @GetMapping("/export")
++    public AjaxResult export(BidHotNews bidHotNews)
++    {
++        List<BidHotNews> list = bidHotNewsService.selectBidHotNewsList(bidHotNews);
++        ExcelUtil<BidHotNews> util = new ExcelUtil<BidHotNews>(BidHotNews.class);
++        return util.exportExcel(list, "hotnews");
++    }
++
++    /**
++     * 获取热点新闻详细信息
++     */
++    @ApiOperation("获取热点新闻详细信息")
++    @GetMapping(value = "/{id}")
++    public AjaxResult getInfo(@PathVariable("id") Long id)
++    {
++        return AjaxResult.success(bidHotNewsService.selectBidHotNewsById(id));
++    }
++
++    /**
++     * 新增热点新闻
++     */
++    @PreAuthorize("@ss.hasPermi('bid:hotnews:add')")
++    @Log(title = "热点新闻", businessType = BusinessType.INSERT)
++    @PostMapping
++    public AjaxResult add(@RequestBody BidHotNews bidHotNews)
++    {
++        return toAjax(bidHotNewsService.insertBidHotNews(bidHotNews));
++    }
++
++    /**
++     * 修改热点新闻
++     */
++    @PreAuthorize("@ss.hasPermi('bid:hotnews:edit')")
++    @Log(title = "热点新闻", businessType = BusinessType.UPDATE)
++    @PutMapping
++    public AjaxResult edit(@RequestBody BidHotNews bidHotNews)
++    {
++        return toAjax(bidHotNewsService.updateBidHotNews(bidHotNews));
++    }
++
++    /**
++     * 批量发布
++     */
++    @PreAuthorize("@ss.hasPermi('bid:hotnews:edit')")
++    @Log(title = "热点新闻", businessType = BusinessType.UPDATE)
++    @PutMapping("/publish/{ids}")
++    public AjaxResult publish(@PathVariable Long[] ids)
++    {
++        return toAjax(bidHotNewsService.updateStatusByIds(ids, 1));
++    }
++
++    /**
++     * 批量下线
++     */
++    @PreAuthorize("@ss.hasPermi('bid:hotnews:edit')")
++    @Log(title = "热点新闻", businessType = BusinessType.UPDATE)
++    @PutMapping("/offline/{ids}")
++    public AjaxResult offline(@PathVariable Long[] ids)
++    {
++        return toAjax(bidHotNewsService.updateStatusByIds(ids, 2));
++    }
++
++    /**
++     * 删除热点新闻
++     */
++    @PreAuthorize("@ss.hasPermi('bid:hotnews:remove')")
++    @Log(title = "热点新闻", businessType = BusinessType.DELETE)
++    @DeleteMapping("/{ids}")
++    public AjaxResult remove(@PathVariable Long[] ids)
++    {
++        return toAjax(bidHotNewsService.deleteBidHotNewsByIds(ids));
++    }
++}
+diff --git a/backend/neu-carbon-mapper/src/main/java/com/neu/carbon/bid/domain/BidHotNews.java b/backend/neu-carbon-mapper/src/main/java/com/neu/carbon/bid/domain/BidHotNews.java
+new file mode 100644
+index 0000000..2d18a7c
+--- /dev/null
++++ b/backend/neu-carbon-mapper/src/main/java/com/neu/carbon/bid/domain/BidHotNews.java
+@@ -0,0 +1,259 @@
++package com.neu.carbon.bid.domain;
++
++import java.util.Date;
++
++import com.alibaba.fastjson.annotation.JSONField;
++import com.alibaba.fastjson.serializer.ToStringSerializer;
++import com.fasterxml.jackson.annotation.JsonFormat;
++import org.apache.commons.lang3.builder.ToStringBuilder;
++import org.apache.commons.lang3.builder.ToStringStyle;
++import com.neu.common.annotation.Excel;
++import com.neu.common.core.domain.BaseEntity;
++
++import io.swagger.annotations.ApiModel;
++import io.swagger.annotations.ApiModelProperty;
++
++/**
++ * 热点新闻对象 bid_hot_news
++ *
++ * @author neuedu
++ * @date 2026-01-08
++ */
++@ApiModel("热点新闻")
++public class BidHotNews extends BaseEntity
++{
++    private static final long serialVersionUID = 1L;
++
++    /** 主键 */
++    @ApiModelProperty("主键")
++    @JsonFormat(shape = JsonFormat.Shape.STRING)
++    @JSONField(serializeUsing = ToStringSerializer.class)
++    private Long id;
++
++    /** 新闻标题 */
++    @ApiModelProperty("新闻标题")
++    @Excel(name = "新闻标题")
++    private String title;
++
++    /** 新闻分类 1政策动态 2行业资讯 3技术前沿 4市场趋势 5其他 */
++    @ApiModelProperty("新闻分类")
++    @Excel(name = "新闻分类", readConverterExp = "1=政策动态,2=行业资讯,3=技术前沿,4=市场趋势,5=其他")
++    private Integer category;
++
++    /** 新闻封面 */
++    @ApiModelProperty("新闻封面")
++    private String cover;
++
++    /** 新闻简介 */
++    @ApiModelProperty("新闻简介")
++    private String summary;
++
++    /** 新闻正文 */
++    @ApiModelProperty("新闻正文")
++    private String content;
++
++    /** 新闻来源 */
++    @ApiModelProperty("新闻来源")
++    @Excel(name = "新闻来源")
++    private String source;
++
++    /** 发布人 */
++    @ApiModelProperty("发布人")
++    @Excel(name = "发布人")
++    private String publisher;
++
++    /** 发布时间 */
++    @ApiModelProperty(value = "发布时间", example = "2026-01-08")
++    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
++    @Excel(name = "发布时间", width = 30, dateFormat = "yyyy-MM-dd HH:mm:ss")
++    private Date publishTime;
++
++    /** 是否置顶 0否 1是 */
++    @ApiModelProperty("是否置顶")
++    @Excel(name = "是否置顶", readConverterExp = "0=否,1=是")
++    private Integer isTop;
++
++    /** 新闻状态 0草稿 1已发布 2已下线 */
++    @ApiModelProperty("新闻状态")
++    @Excel(name = "新闻状态", readConverterExp = "0=草稿,1=已发布,2=已下线")
++    private Integer status;
++
++    /** 浏览量 */
++    @ApiModelProperty("浏览量")
++    @Excel(name = "浏览量")
++    private Integer viewCount;
++
++    /** 点赞量 */
++    @ApiModelProperty("点赞量")
++    @Excel(name = "点赞量")
++    private Integer likeCount;
++
++    /** 评论数 */
++    @ApiModelProperty("评论数")
++    private Integer commentCount;
++
++    public void setId(Long id)
++    {
++        this.id = id;
++    }
++
++    public Long getId()
++    {
++        return id;
++    }
++
++    public void setTitle(String title)
++    {
++        this.title = title;
++    }
++
++    public String getTitle()
++    {
++        return title;
++    }
++
++    public void setCategory(Integer category)
++    {
++        this.category = category;
++    }
++
++    public Integer getCategory()
++    {
++        return category;
++    }
++
++    public void setCover(String cover)
++    {
++        this.cover = cover;
++    }
++
++    public String getCover()
++    {
++        return cover;
++    }
++
++    public void setSummary(String summary)
++    {
++        this.summary = summary;
++    }
++
++    public String getSummary()
++    {
++        return summary;
++    }
++
++    public void setContent(String content)
++    {
++        this.content = content;
++    }
++
++    public String getContent()
++    {
++        return content;
++    }
++
++    public void setSource(String source)
++    {
++        this.source = source;
++    }
++
++    public String getSource()
++    {
++        return source;
++    }
++
++    public void setPublisher(String publisher)
++    {
++        this.publisher = publisher;
++    }
++
++    public String getPublisher()
++    {
++        return publisher;
++    }
++
++    public void setPublishTime(Date publishTime)
++    {
++        this.publishTime = publishTime;
++    }
++
++    public Date getPublishTime()
++    {
++        return publishTime;
++    }
++
++    public void setIsTop(Integer isTop)
++    {
++        this.isTop = isTop;
++    }
++
++    public Integer getIsTop()
++    {
++        return isTop;
++    }
++
++    public void setStatus(Integer status)
++    {
++        this.status = status;
++    }
++
++    public Integer getStatus()
++    {
++        return status;
++    }
++
++    public void setViewCount(Integer viewCount)
++    {
++        this.viewCount = viewCount;
++    }
++
++    public Integer getViewCount()
++    {
++        return viewCount;
++    }
++
++    public void setLikeCount(Integer likeCount)
++    {
++        this.likeCount = likeCount;
++    }
++
++    public Integer getLikeCount()
++    {
++        return likeCount;
++    }
++
++    public void setCommentCount(Integer commentCount)
++    {
++        this.commentCount = commentCount;
++    }
++
++    public Integer getCommentCount()
++    {
++        return commentCount;
++    }
++
++    @Override
++    public String toString() {
++        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
++            .append("id", getId())
++            .append("title", getTitle())
++            .append("category", getCategory())
++            .append("cover", getCover())
++            .append("summary", getSummary())
++            .append("content", getContent())
++            .append("source", getSource())
++            .append("publisher", getPublisher())
++            .append("publishTime", getPublishTime())
++            .append("isTop", getIsTop())
++            .append("status", getStatus())
++            .append("viewCount", getViewCount())
++            .append("likeCount", getLikeCount())
++            .append("commentCount", getCommentCount())
++            .append("createBy", getCreateBy())
++            .append("createTime", getCreateTime())
++            .append("updateBy", getUpdateBy())
++            .append("updateTime", getUpdateTime())
++            .append("remark", getRemark())
++            .toString();
++    }
++}
+diff --git a/backend/neu-carbon-mapper/src/main/java/com/neu/carbon/bid/mapper/BidHotNewsMapper.java b/backend/neu-carbon-mapper/src/main/java/com/neu/carbon/bid/mapper/BidHotNewsMapper.java
+new file mode 100644
+index 0000000..678f0f8
+--- /dev/null
++++ b/backend/neu-carbon-mapper/src/main/java/com/neu/carbon/bid/mapper/BidHotNewsMapper.java
+@@ -0,0 +1,102 @@
++package com.neu.carbon.bid.mapper;
++
++import java.util.List;
++import org.apache.ibatis.annotations.Param;
++import com.neu.carbon.bid.domain.BidHotNews;
++
++/**
++ * 热点新闻Mapper接口
++ *
++ * @author neuedu
++ * @date 2026-01-08
++ */
++public interface BidHotNewsMapper
++{
++    /**
++     * 查询热点新闻
++     *
++     * @param id 热点新闻主键
++     * @return 热点新闻
++     */
++    public BidHotNews selectBidHotNewsById(Long id);
++
++    /**
++     * 查询热点新闻列表
++     *
++     * @param bidHotNews 热点新闻
++     * @return 热点新闻集合
++     */
++    public List<BidHotNews> selectBidHotNewsList(BidHotNews bidHotNews);
++
++    /**
++     * 查询热点排行（已发布，按浏览量倒序取前十条）
++     *
++     * @return 热点新闻集合
++     */
++    public List<BidHotNews> selectHotRankList();
++
++    /**
++     * 新增热点新闻
++     *
++     * @param bidHotNews 热点新闻
++     * @return 结果
++     */
++    public int insertBidHotNews(BidHotNews bidHotNews);
++
++    /**
++     * 修改热点新闻
++     *
++     * @param bidHotNews 热点新闻
++     * @return 结果
++     */
++    public int updateBidHotNews(BidHotNews bidHotNews);
++
++    /**
++     * 删除热点新闻
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    public int deleteBidHotNewsById(Long id);
++
++    /**
++     * 批量删除热点新闻
++     *
++     * @param ids 需要删除的数据主键集合
++     * @return 结果
++     */
++    public int deleteBidHotNewsByIds(Long[] ids);
++
++    /**
++     * 浏览量加一
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    public int increaseViewCount(Long id);
++
++    /**
++     * 点赞量加一
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    public int increaseLikeCount(Long id);
++
++    /**
++     * 点赞量减一
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    public int decreaseLikeCount(Long id);
++
++    /**
++     * 批量修改新闻状态
++     *
++     * @param ids 主键集合
++     * @param status 新闻状态
++     * @return 结果
++     */
++    public int updateStatusByIds(@Param("ids") Long[] ids, @Param("status") Integer status);
++}
+diff --git a/backend/neu-carbon-mapper/src/main/resources/mapper/bid/BidHotNewsMapper.xml b/backend/neu-carbon-mapper/src/main/resources/mapper/bid/BidHotNewsMapper.xml
+new file mode 100644
+index 0000000..646bdfd
+--- /dev/null
++++ b/backend/neu-carbon-mapper/src/main/resources/mapper/bid/BidHotNewsMapper.xml
+@@ -0,0 +1,163 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<!DOCTYPE mapper
++PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
++"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
++<mapper namespace="com.neu.carbon.bid.mapper.BidHotNewsMapper">
++
++    <resultMap type="BidHotNews" id="BidHotNewsResult">
++        <result property="id"    column="id"    />
++        <result property="title"    column="title"    />
++        <result property="category"    column="category"    />
++        <result property="cover"    column="cover"    />
++        <result property="summary"    column="summary"    />
++        <result property="content"    column="content"    />
++        <result property="source"    column="source"    />
++        <result property="publisher"    column="publisher"    />
++        <result property="publishTime"    column="publish_time"    />
++        <result property="isTop"    column="is_top"    />
++        <result property="status"    column="status"    />
++        <result property="viewCount"    column="view_count"    />
++        <result property="likeCount"    column="like_count"    />
++        <result property="commentCount"    column="comment_count"    />
++        <result property="createBy"    column="create_by"    />
++        <result property="createTime"    column="create_time"    />
++        <result property="updateBy"    column="update_by"    />
++        <result property="updateTime"    column="update_time"    />
++        <result property="remark"    column="remark"    />
++    </resultMap>
++
++    <sql id="selectBidHotNewsVo">
++        select id, title, category, cover, summary, content, source, publisher, publish_time, is_top, status, view_count, like_count, comment_count, create_by, create_time, update_by, update_time, remark from bid_hot_news
++    </sql>
++
++    <select id="selectBidHotNewsList" parameterType="BidHotNews" resultMap="BidHotNewsResult">
++        <include refid="selectBidHotNewsVo"/>
++        <where>
++            <if test="title != null  and title != ''"> and title LIKE CONCAT('%',#{title},'%')</if>
++            <if test="category != null "> and category = #{category}</if>
++            <if test="source != null  and source != ''"> and source = #{source}</if>
++            <if test="publisher != null  and publisher != ''"> and publisher = #{publisher}</if>
++            <if test="isTop != null "> and is_top = #{isTop}</if>
++            <if test="status != null "> and status = #{status}</if>
++            <if test="params.beginTime != null and params.beginTime != ''"> and publish_time &gt;= #{params.beginTime}</if>
++            <if test="params.endTime != null and params.endTime != ''"> and publish_time &lt;= #{params.endTime}</if>
++        </where>
++        <choose>
++            <when test="params.orderBy == 'hot'">order by is_top desc, view_count desc</when>
++            <when test="params.orderBy == 'newest'">order by is_top desc, publish_time desc</when>
++            <otherwise>order by is_top desc, view_count desc, publish_time desc</otherwise>
++        </choose>
++    </select>
++
++    <select id="selectHotRankList" resultMap="BidHotNewsResult">
++        <include refid="selectBidHotNewsVo"/>
++        where status = 1
++        order by view_count desc
++        limit 10
++    </select>
++
++    <select id="selectBidHotNewsById" parameterType="Long" resultMap="BidHotNewsResult">
++        <include refid="selectBidHotNewsVo"/>
++        where id = #{id}
++    </select>
++
++    <insert id="insertBidHotNews" parameterType="BidHotNews" useGeneratedKeys="true" keyProperty="id">
++        insert into bid_hot_news
++        <trim prefix="(" suffix=")" suffixOverrides=",">
++            <if test="id != null">id,</if>
++            <if test="title != null and title != ''">title,</if>
++            <if test="category != null">category,</if>
++            <if test="cover != null">cover,</if>
++            <if test="summary != null">summary,</if>
++            <if test="content != null and content != ''">content,</if>
++            <if test="source != null">source,</if>
++            <if test="publisher != null">publisher,</if>
++            <if test="publishTime != null">publish_time,</if>
++            <if test="isTop != null">is_top,</if>
++            <if test="status != null">status,</if>
++            <if test="viewCount != null">view_count,</if>
++            <if test="likeCount != null">like_count,</if>
++            <if test="commentCount != null">comment_count,</if>
++            <if test="createBy != null">create_by,</if>
++            <if test="createTime != null">create_time,</if>
++            <if test="updateBy != null">update_by,</if>
++            <if test="updateTime != null">update_time,</if>
++            <if test="remark != null">remark,</if>
++         </trim>
++        <trim prefix="values (" suffix=")" suffixOverrides=",">
++            <if test="id != null">#{id},</if>
++            <if test="title != null and title != ''">#{title},</if>
++            <if test="category != null">#{category},</if>
++            <if test="cover != null">#{cover},</if>
++            <if test="summary != null">#{summary},</if>
++            <if test="content != null and content != ''">#{content},</if>
++            <if test="source != null">#{source},</if>
++            <if test="publisher != null">#{publisher},</if>
++            <if test="publishTime != null">#{publishTime},</if>
++            <if test="isTop != null">#{isTop},</if>
++            <if test="status != null">#{status},</if>
++            <if test="viewCount != null">#{viewCount},</if>
++            <if test="likeCount != null">#{likeCount},</if>
++            <if test="commentCount != null">#{commentCount},</if>
++            <if test="createBy != null">#{createBy},</if>
++            <if test="createTime != null">#{createTime},</if>
++            <if test="updateBy != null">#{updateBy},</if>
++            <if test="updateTime != null">#{updateTime},</if>
++            <if test="remark != null">#{remark},</if>
++         </trim>
++    </insert>
++
++    <update id="updateBidHotNews" parameterType="BidHotNews">
++        update bid_hot_news
++        <trim prefix="SET" suffixOverrides=",">
++            <if test="title != null and title != ''">title = #{title},</if>
++            <if test="category != null">category = #{category},</if>
++            <if test="cover != null">cover = #{cover},</if>
++            <if test="summary != null">summary = #{summary},</if>
++            <if test="content != null and content != ''">content = #{content},</if>
++            <if test="source != null">source = #{source},</if>
++            <if test="publisher != null">publisher = #{publisher},</if>
++            <if test="publishTime != null">publish_time = #{publishTime},</if>
++            <if test="isTop != null">is_top = #{isTop},</if>
++            <if test="status != null">status = #{status},</if>
++            <if test="viewCount != null">view_count = #{viewCount},</if>
++            <if test="likeCount != null">like_count = #{likeCount},</if>
++            <if test="commentCount != null">comment_count = #{commentCount},</if>
++            <if test="updateBy != null">update_by = #{updateBy},</if>
++            <if test="updateTime != null">update_time = #{updateTime},</if>
++            <if test="remark != null">remark = #{remark},</if>
++        </trim>
++        where id = #{id}
++    </update>
++
++    <update id="increaseViewCount" parameterType="Long">
++        update bid_hot_news set view_count = ifnull(view_count, 0) + 1 where id = #{id}
++    </update>
++
++    <update id="increaseLikeCount" parameterType="Long">
++        update bid_hot_news set like_count = ifnull(like_count, 0) + 1 where id = #{id}
++    </update>
++
++    <update id="decreaseLikeCount" parameterType="Long">
++        update bid_hot_news set like_count = if(ifnull(like_count, 0) &gt; 0, like_count - 1, 0) where id = #{id}
++    </update>
++
++    <update id="updateStatusByIds">
++        update bid_hot_news set status = #{status} where id in
++        <foreach item="id" collection="ids" open="(" separator="," close=")">
++            #{id}
++        </foreach>
++    </update>
++
++    <delete id="deleteBidHotNewsById" parameterType="Long">
++        delete from bid_hot_news where id = #{id}
++    </delete>
++
++    <delete id="deleteBidHotNewsByIds" parameterType="String">
++        delete from bid_hot_news where id in
++        <foreach item="id" collection="array" open="(" separator="," close=")">
++            #{id}
++        </foreach>
++    </delete>
++
++</mapper>
+diff --git a/backend/neu-carbon-service/src/main/java/com/neu/carbon/bid/service/IBidHotNewsService.java b/backend/neu-carbon-service/src/main/java/com/neu/carbon/bid/service/IBidHotNewsService.java
+new file mode 100644
+index 0000000..226e0cd
+--- /dev/null
++++ b/backend/neu-carbon-service/src/main/java/com/neu/carbon/bid/service/IBidHotNewsService.java
+@@ -0,0 +1,101 @@
++package com.neu.carbon.bid.service;
++
++import java.util.List;
++import com.neu.carbon.bid.domain.BidHotNews;
++
++/**
++ * 热点新闻Service接口
++ *
++ * @author neuedu
++ * @date 2026-01-08
++ */
++public interface IBidHotNewsService
++{
++    /**
++     * 查询热点新闻
++     *
++     * @param id 热点新闻主键
++     * @return 热点新闻
++     */
++    public BidHotNews selectBidHotNewsById(Long id);
++
++    /**
++     * 查询热点新闻列表
++     *
++     * @param bidHotNews 热点新闻
++     * @return 热点新闻集合
++     */
++    public List<BidHotNews> selectBidHotNewsList(BidHotNews bidHotNews);
++
++    /**
++     * 查询热点排行
++     *
++     * @return 热点新闻集合
++     */
++    public List<BidHotNews> selectHotRankList();
++
++    /**
++     * 新增热点新闻
++     *
++     * @param bidHotNews 热点新闻
++     * @return 结果
++     */
++    public int insertBidHotNews(BidHotNews bidHotNews);
++
++    /**
++     * 修改热点新闻
++     *
++     * @param bidHotNews 热点新闻
++     * @return 结果
++     */
++    public int updateBidHotNews(BidHotNews bidHotNews);
++
++    /**
++     * 批量删除热点新闻
++     *
++     * @param ids 需要删除的热点新闻主键集合
++     * @return 结果
++     */
++    public int deleteBidHotNewsByIds(Long[] ids);
++
++    /**
++     * 删除热点新闻信息
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    public int deleteBidHotNewsById(Long id);
++
++    /**
++     * 浏览量加一
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    public int increaseViewCount(Long id);
++
++    /**
++     * 点赞
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    public int like(Long id);
++
++    /**
++     * 取消点赞
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    public int unlike(Long id);
++
++    /**
++     * 批量修改新闻状态
++     *
++     * @param ids 主键集合
++     * @param status 新闻状态
++     * @return 结果
++     */
++    public int updateStatusByIds(Long[] ids, Integer status);
++}
+diff --git a/backend/neu-carbon-service/src/main/java/com/neu/carbon/bid/service/impl/BidHotNewsServiceImpl.java b/backend/neu-carbon-service/src/main/java/com/neu/carbon/bid/service/impl/BidHotNewsServiceImpl.java
+new file mode 100644
+index 0000000..eafd3fd
+--- /dev/null
++++ b/backend/neu-carbon-service/src/main/java/com/neu/carbon/bid/service/impl/BidHotNewsServiceImpl.java
+@@ -0,0 +1,175 @@
++package com.neu.carbon.bid.service.impl;
++
++import java.util.List;
++
++import cn.hutool.core.util.IdUtil;
++import com.neu.common.utils.DateUtils;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.stereotype.Service;
++import com.neu.carbon.bid.mapper.BidHotNewsMapper;
++import com.neu.carbon.bid.domain.BidHotNews;
++import com.neu.carbon.bid.service.IBidHotNewsService;
++
++/**
++ * 热点新闻Service业务层处理
++ *
++ * @author neuedu
++ * @date 2026-01-08
++ */
++@Service
++public class BidHotNewsServiceImpl implements IBidHotNewsService
++{
++    @Autowired
++    private BidHotNewsMapper bidHotNewsMapper;
++
++    /**
++     * 查询热点新闻
++     *
++     * @param id 热点新闻主键
++     * @return 热点新闻
++     */
++    @Override
++    public BidHotNews selectBidHotNewsById(Long id)
++    {
++        return bidHotNewsMapper.selectBidHotNewsById(id);
++    }
++
++    /**
++     * 查询热点新闻列表
++     *
++     * @param bidHotNews 热点新闻
++     * @return 热点新闻
++     */
++    @Override
++    public List<BidHotNews> selectBidHotNewsList(BidHotNews bidHotNews)
++    {
++        return bidHotNewsMapper.selectBidHotNewsList(bidHotNews);
++    }
++
++    /**
++     * 查询热点排行
++     *
++     * @return 热点新闻集合
++     */
++    @Override
++    public List<BidHotNews> selectHotRankList()
++    {
++        return bidHotNewsMapper.selectHotRankList();
++    }
++
++    /**
++     * 新增热点新闻
++     *
++     * @param bidHotNews 热点新闻
++     * @return 结果
++     */
++    @Override
++    public int insertBidHotNews(BidHotNews bidHotNews)
++    {
++        bidHotNews.setCreateTime(DateUtils.getNowDate());
++        bidHotNews.setId(IdUtil.getSnowflake(1, 1).nextId());
++        if (bidHotNews.getPublishTime() == null)
++        {
++            bidHotNews.setPublishTime(DateUtils.getNowDate());
++        }
++        if (bidHotNews.getViewCount() == null)
++        {
++            bidHotNews.setViewCount(0);
++        }
++        if (bidHotNews.getLikeCount() == null)
++        {
++            bidHotNews.setLikeCount(0);
++        }
++        if (bidHotNews.getCommentCount() == null)
++        {
++            bidHotNews.setCommentCount(0);
++        }
++        return bidHotNewsMapper.insertBidHotNews(bidHotNews);
++    }
++
++    /**
++     * 修改热点新闻
++     *
++     * @param bidHotNews 热点新闻
++     * @return 结果
++     */
++    @Override
++    public int updateBidHotNews(BidHotNews bidHotNews)
++    {
++        bidHotNews.setUpdateTime(DateUtils.getNowDate());
++        return bidHotNewsMapper.updateBidHotNews(bidHotNews);
++    }
++
++    /**
++     * 批量删除热点新闻
++     *
++     * @param ids 需要删除的热点新闻主键
++     * @return 结果
++     */
++    @Override
++    public int deleteBidHotNewsByIds(Long[] ids)
++    {
++        return bidHotNewsMapper.deleteBidHotNewsByIds(ids);
++    }
++
++    /**
++     * 删除热点新闻信息
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    @Override
++    public int deleteBidHotNewsById(Long id)
++    {
++        return bidHotNewsMapper.deleteBidHotNewsById(id);
++    }
++
++    /**
++     * 浏览量加一
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    @Override
++    public int increaseViewCount(Long id)
++    {
++        return bidHotNewsMapper.increaseViewCount(id);
++    }
++
++    /**
++     * 点赞
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    @Override
++    public int like(Long id)
++    {
++        return bidHotNewsMapper.increaseLikeCount(id);
++    }
++
++    /**
++     * 取消点赞
++     *
++     * @param id 热点新闻主键
++     * @return 结果
++     */
++    @Override
++    public int unlike(Long id)
++    {
++        return bidHotNewsMapper.decreaseLikeCount(id);
++    }
++
++    /**
++     * 批量修改新闻状态
++     *
++     * @param ids 主键集合
++     * @param status 新闻状态
++     * @return 结果
++     */
++    @Override
++    public int updateStatusByIds(Long[] ids, Integer status)
++    {
++        return bidHotNewsMapper.updateStatusByIds(ids, status);
++    }
++}
+diff --git a/frontend_administrator/src/api/bid/hotnews.js b/frontend_administrator/src/api/bid/hotnews.js
+new file mode 100644
+index 0000000..6b4c3db
+--- /dev/null
++++ b/frontend_administrator/src/api/bid/hotnews.js
+@@ -0,0 +1,69 @@
++import request from '@/utils/request'
++
++// 查询热点新闻列表
++export function listHotnews(query) {
++  return request({
++    url: '/bid/hotnews/list',
++    method: 'get',
++    params: query
++  })
++}
++
++// 查询热点新闻详细
++export function getHotnews(id) {
++  return request({
++    url: '/bid/hotnews/' + id,
++    method: 'get'
++  })
++}
++
++// 新增热点新闻
++export function addHotnews(data) {
++  return request({
++    url: '/bid/hotnews',
++    method: 'post',
++    data: data
++  })
++}
++
++// 修改热点新闻
++export function updateHotnews(data) {
++  return request({
++    url: '/bid/hotnews',
++    method: 'put',
++    data: data
++  })
++}
++
++// 删除热点新闻
++export function delHotnews(id) {
++  return request({
++    url: '/bid/hotnews/' + id,
++    method: 'delete'
++  })
++}
++
++// 批量发布
++export function publishHotnews(ids) {
++  return request({
++    url: '/bid/hotnews/publish/' + ids,
++    method: 'put'
++  })
++}
++
++// 批量下线
++export function offlineHotnews(ids) {
++  return request({
++    url: '/bid/hotnews/offline/' + ids,
++    method: 'put'
++  })
++}
++
++// 导出热点新闻
++export function exportHotnews(query) {
++  return request({
++    url: '/bid/hotnews/export',
++    method: 'get',
++    params: query
++  })
++}
+diff --git a/frontend_administrator/src/views/bid/hotnews/index.vue b/frontend_administrator/src/views/bid/hotnews/index.vue
+new file mode 100644
+index 0000000..0c1d2c2
+--- /dev/null
++++ b/frontend_administrator/src/views/bid/hotnews/index.vue
+@@ -0,0 +1,437 @@
++<template>
++  <div class="app-container">
++    <el-form :model="queryParams" ref="queryRef" :inline="true" v-show="showSearch">
++      <el-form-item label="新闻标题" prop="title">
++        <el-input v-model="queryParams.title" placeholder="请输入新闻标题" clearable style="width: 200px" @keyup.enter="handleQuery" />
++      </el-form-item>
++      <el-form-item label="新闻分类" prop="category">
++        <el-select v-model="queryParams.category" placeholder="请选择分类" clearable style="width: 160px">
++          <el-option v-for="item in categoryOptions" :key="item.value" :label="item.label" :value="item.value" />
++        </el-select>
++      </el-form-item>
++      <el-form-item label="新闻来源" prop="source">
++        <el-input v-model="queryParams.source" placeholder="请输入新闻来源" clearable style="width: 180px" @keyup.enter="handleQuery" />
++      </el-form-item>
++      <el-form-item label="发布人" prop="publisher">
++        <el-select v-model="queryParams.publisher" placeholder="请选择发布人" clearable style="width: 160px">
++          <el-option v-for="item in publisherOptions" :key="item" :label="item" :value="item" />
++        </el-select>
++      </el-form-item>
++      <el-form-item label="发布时间">
++        <el-date-picker
++          v-model="dateRange"
++          type="daterange"
++          value-format="YYYY-MM-DD"
++          range-separator="-"
++          start-placeholder="开始日期"
++          end-placeholder="结束日期"
++          style="width: 240px"
++        />
++      </el-form-item>
++      <el-form-item label="新闻状态" prop="status">
++        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 140px">
++          <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
++        </el-select>
++      </el-form-item>
++      <el-form-item label="是否置顶" prop="isTop">
++        <el-select v-model="queryParams.isTop" placeholder="请选择" clearable style="width: 120px">
++          <el-option label="是" :value="1" />
++          <el-option label="否" :value="0" />
++        </el-select>
++      </el-form-item>
++      <el-form-item>
++        <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
++        <el-button icon="Refresh" @click="resetQuery">重置</el-button>
++      </el-form-item>
++    </el-form>
++
++    <el-row :gutter="10" class="mb8">
++      <el-col :span="1.5">
++        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['bid:hotnews:add']">新增</el-button>
++      </el-col>
++      <el-col :span="1.5">
++        <el-button type="success" plain icon="Upload" :disabled="multiple" @click="handleBatchPublish" v-hasPermi="['bid:hotnews:edit']">批量发布</el-button>
++      </el-col>
++      <el-col :span="1.5">
++        <el-button type="warning" plain icon="Download" :disabled="multiple" @click="handleBatchOffline" v-hasPermi="['bid:hotnews:edit']">批量下线</el-button>
++      </el-col>
++      <el-col :span="1.5">
++        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['bid:hotnews:remove']">批量删除</el-button>
++      </el-col>
++      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
++    </el-row>
++
++    <el-table v-loading="loading" :data="newsList" @selection-change="handleSelectionChange">
++      <el-table-column type="selection" width="50" align="center" />
++      <el-table-column label="编号" align="center" prop="id" width="180" :show-overflow-tooltip="true" />
++      <el-table-column label="新闻标题" align="center" prop="title" min-width="200" :show-overflow-tooltip="true" />
++      <el-table-column label="新闻分类" align="center" prop="category" width="110">
++        <template #default="scope">
++          <span>{{ categoryLabel(scope.row.category) }}</span>
++        </template>
++      </el-table-column>
++      <el-table-column label="新闻来源" align="center" prop="source" width="140" :show-overflow-tooltip="true" />
++      <el-table-column label="发布人" align="center" prop="publisher" width="100" />
++      <el-table-column label="发布时间" align="center" prop="publishTime" width="160">
++        <template #default="scope">
++          <span>{{ parseTime(scope.row.publishTime, '{y}-{m}-{d} {h}:{i}') }}</span>
++        </template>
++      </el-table-column>
++      <el-table-column label="是否置顶" align="center" prop="isTop" width="90">
++        <template #default="scope">
++          <el-tag :type="scope.row.isTop === 1 ? 'danger' : 'info'">{{ scope.row.isTop === 1 ? '是' : '否' }}</el-tag>
++        </template>
++      </el-table-column>
++      <el-table-column label="新闻状态" align="center" prop="status" width="100">
++        <template #default="scope">
++          <el-tag :type="statusTagType(scope.row.status)">{{ statusLabel(scope.row.status) }}</el-tag>
++        </template>
++      </el-table-column>
++      <el-table-column label="浏览量" align="center" prop="viewCount" width="90" />
++      <el-table-column label="点赞量" align="center" prop="likeCount" width="90" />
++      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
++        <template #default="scope">
++          <el-button link type="primary" icon="View" @click="handleView(scope.row)">查看</el-button>
++          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['bid:hotnews:edit']">编辑</el-button>
++          <el-button link type="danger" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['bid:hotnews:remove']">删除</el-button>
++        </template>
++      </el-table-column>
++    </el-table>
++
++    <pagination
++      v-show="total > 0"
++      :total="total"
++      v-model:page="queryParams.pageNum"
++      v-model:limit="queryParams.pageSize"
++      @pagination="getList"
++    />
++
++    <!-- 新增 / 编辑新闻 -->
++    <el-dialog :title="title" v-model="open" width="900px" append-to-body>
++      <el-form ref="newsRef" :model="form" :rules="rules" label-width="90px">
++        <el-row>
++          <el-col :span="12">
++            <el-form-item label="新闻标题" prop="title">
++              <el-input v-model="form.title" placeholder="请输入新闻标题" />
++            </el-form-item>
++          </el-col>
++          <el-col :span="12">
++            <el-form-item label="新闻分类" prop="category">
++              <el-select v-model="form.category" placeholder="请选择新闻分类" style="width: 100%">
++                <el-option v-for="item in categoryOptions" :key="item.value" :label="item.label" :value="item.value" />
++              </el-select>
++            </el-form-item>
++          </el-col>
++          <el-col :span="12">
++            <el-form-item label="新闻来源" prop="source">
++              <el-input v-model="form.source" placeholder="请输入新闻来源" />
++            </el-form-item>
++          </el-col>
++          <el-col :span="12">
++            <el-form-item label="发布人" prop="publisher">
++              <el-input v-model="form.publisher" placeholder="请输入发布人" />
++            </el-form-item>
++          </el-col>
++          <el-col :span="12">
++            <el-form-item label="是否置顶" prop="isTop">
++              <el-switch v-model="form.isTop" :active-value="1" :inactive-value="0" />
++            </el-form-item>
++          </el-col>
++          <el-col :span="24">
++            <el-form-item label="新闻封面" prop="cover">
++              <image-upload v-model="form.cover" :limit="1" />
++            </el-form-item>
++          </el-col>
++          <el-col :span="24">
++            <el-form-item label="新闻简介" prop="summary">
++              <el-input v-model="form.summary" type="textarea" :rows="2" placeholder="请输入新闻简介" />
++            </el-form-item>
++          </el-col>
++          <el-col :span="24">
++            <el-form-item label="新闻正文" prop="content">
++              <editor v-model="form.content" :min-height="240" />
++            </el-form-item>
++          </el-col>
++        </el-row>
++      </el-form>
++      <template #footer>
++        <div class="dialog-footer">
++          <template v-if="form.id == undefined">
++            <el-button type="info" @click="submitForm(0)">保存草稿</el-button>
++            <el-button type="primary" @click="submitForm(1)">发布</el-button>
++          </template>
++          <el-button v-else type="primary" @click="submitForm(form.status)">保存</el-button>
++          <el-button @click="cancel">取消</el-button>
++        </div>
++      </template>
++    </el-dialog>
++
++    <!-- 新闻详情 -->
++    <el-dialog title="新闻详情" v-model="viewOpen" width="900px" append-to-body>
++      <div class="news-detail" v-if="detail.id">
++        <h2 class="detail-title">{{ detail.title }}</h2>
++        <div class="detail-meta">
++          <span>分类：{{ categoryLabel(detail.category) }}</span>
++          <span>来源：{{ detail.source }}</span>
++          <span>发布人：{{ detail.publisher }}</span>
++          <span>发布时间：{{ parseTime(detail.publishTime, '{y}-{m}-{d} {h}:{i}') }}</span>
++          <span>浏览量：{{ detail.viewCount }}</span>
++          <span>点赞量：{{ detail.likeCount }}</span>
++          <span>评论数：{{ detail.commentCount }}</span>
++        </div>
++        <div class="detail-cover" v-if="detail.cover">
++          <img :src="coverUrl(detail.cover)" alt="新闻封面" />
++        </div>
++        <div class="detail-content" v-html="detail.content"></div>
++      </div>
++    </el-dialog>
++  </div>
++</template>
++
++<script setup name="Hotnews">
++import { listHotnews, getHotnews, addHotnews, updateHotnews, delHotnews, publishHotnews, offlineHotnews } from "@/api/bid/hotnews";
++
++const { proxy } = getCurrentInstance();
++
++const categoryOptions = [
++  { value: 1, label: "政策动态" },
++  { value: 2, label: "行业资讯" },
++  { value: 3, label: "技术前沿" },
++  { value: 4, label: "市场趋势" },
++  { value: 5, label: "其他" }
++];
++const statusOptions = [
++  { value: 0, label: "草稿" },
++  { value: 1, label: "已发布" },
++  { value: 2, label: "已下线" }
++];
++const publisherOptions = ["admin"];
++
++const newsList = ref([]);
++const open = ref(false);
++const viewOpen = ref(false);
++const loading = ref(true);
++const showSearch = ref(true);
++const ids = ref([]);
++const multiple = ref(true);
++const total = ref(0);
++const title = ref("");
++const dateRange = ref([]);
++const detail = ref({});
++
++const data = reactive({
++  form: {},
++  queryParams: {
++    pageNum: 1,
++    pageSize: 10,
++    title: undefined,
++    category: undefined,
++    source: undefined,
++    publisher: undefined,
++    status: undefined,
++    isTop: undefined
++  },
++  rules: {
++    title: [{ required: true, message: "新闻标题不能为空", trigger: "blur" }],
++    category: [{ required: true, message: "新闻分类不能为空", trigger: "change" }],
++    content: [{ required: true, message: "新闻正文不能为空", trigger: "blur" }]
++  }
++});
++
++const { queryParams, form, rules } = toRefs(data);
++
++function coverUrl(path) {
++  if (!path) return "";
++  if (path.startsWith("http")) return path;
++  return import.meta.env.VITE_APP_BASE_API + path;
++}
++
++function categoryLabel(value) {
++  const item = categoryOptions.find(o => o.value === value);
++  return item ? item.label : "";
++}
++
++function statusLabel(value) {
++  const item = statusOptions.find(o => o.value === value);
++  return item ? item.label : "";
++}
++
++function statusTagType(value) {
++  if (value === 1) return "success";
++  if (value === 2) return "info";
++  return "warning";
++}
++
++/** 查询新闻列表 */
++function getList() {
++  loading.value = true;
++  const params = { ...queryParams.value };
++  if (dateRange.value && dateRange.value.length === 2) {
++    params.params = { beginTime: dateRange.value[0] + " 00:00:00", endTime: dateRange.value[1] + " 23:59:59" };
++  }
++  listHotnews(params).then(response => {
++    newsList.value = response.rows;
++    total.value = response.total;
++    loading.value = false;
++  });
++}
++
++/** 取消按钮 */
++function cancel() {
++  open.value = false;
++  reset();
++}
++
++/** 表单重置 */
++function reset() {
++  form.value = {
++    id: undefined,
++    title: undefined,
++    category: undefined,
++    cover: undefined,
++    summary: undefined,
++    content: undefined,
++    source: undefined,
++    publisher: undefined,
++    isTop: 0,
++    status: 0
++  };
++  proxy.resetForm("newsRef");
++}
++
++/** 搜索按钮操作 */
++function handleQuery() {
++  queryParams.value.pageNum = 1;
++  getList();
++}
++
++/** 重置按钮操作 */
++function resetQuery() {
++  dateRange.value = [];
++  proxy.resetForm("queryRef");
++  handleQuery();
++}
++
++/** 多选框选中数据 */
++function handleSelectionChange(selection) {
++  ids.value = selection.map(item => item.id);
++  multiple.value = !selection.length;
++}
++
++/** 新增按钮操作 */
++function handleAdd() {
++  reset();
++  open.value = true;
++  title.value = "新增新闻";
++}
++
++/** 编辑按钮操作 */
++function handleUpdate(row) {
++  reset();
++  const id = row.id || ids.value[0];
++  getHotnews(id).then(response => {
++    form.value = response.data;
++    open.value = true;
++    title.value = "编辑新闻";
++  });
++}
++
++/** 查看按钮操作 */
++function handleView(row) {
++  getHotnews(row.id).then(response => {
++    detail.value = response.data;
++    viewOpen.value = true;
++  });
++}
++
++/** 提交按钮，status 为保存后的新闻状态 */
++function submitForm(status) {
++  proxy.$refs["newsRef"].validate(valid => {
++    if (!valid) return;
++    form.value.status = status;
++    if (form.value.id != undefined) {
++      updateHotnews(form.value).then(() => {
++        proxy.$modal.msgSuccess("修改成功");
++        open.value = false;
++        getList();
++      });
++    } else {
++      addHotnews(form.value).then(() => {
++        proxy.$modal.msgSuccess(status === 1 ? "发布成功" : "草稿保存成功");
++        open.value = false;
++        getList();
++      });
++    }
++  });
++}
++
++/** 删除按钮操作 */
++function handleDelete(row) {
++  const delIds = row.id ? [row.id] : ids.value;
++  const tip = row.id
++    ? `确认删除新闻《${row.title}》？`
++    : `确认删除选中的 ${delIds.length} 条新闻？`;
++  proxy.$modal.confirm(tip).then(() => {
++    return delHotnews(delIds.join(","));
++  }).then(() => {
++    getList();
++    proxy.$modal.msgSuccess("删除成功");
++  }).catch(() => {});
++}
++
++/** 批量发布 */
++function handleBatchPublish() {
++  proxy.$modal.confirm(`确认发布选中的 ${ids.value.length} 条新闻？`).then(() => {
++    return publishHotnews(ids.value.join(","));
++  }).then(() => {
++    getList();
++    proxy.$modal.msgSuccess("发布成功");
++  }).catch(() => {});
++}
++
++/** 批量下线 */
++function handleBatchOffline() {
++  proxy.$modal.confirm(`确认下线选中的 ${ids.value.length} 条新闻？`).then(() => {
++    return offlineHotnews(ids.value.join(","));
++  }).then(() => {
++    getList();
++    proxy.$modal.msgSuccess("下线成功");
++  }).catch(() => {});
++}
++
++getList();
++</script>
++
++<style scoped>
++.news-detail {
++  padding: 0 10px;
++}
++.detail-title {
++  font-size: 22px;
++  margin: 0 0 12px;
++  text-align: center;
++}
++.detail-meta {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 16px;
++  justify-content: center;
++  color: #909399;
++  font-size: 13px;
++  padding-bottom: 12px;
++  border-bottom: 1px solid #ebeef5;
++}
++.detail-cover {
++  text-align: center;
++  margin: 16px 0;
++}
++.detail-cover img {
++  max-width: 100%;
++  max-height: 320px;
++}
++.detail-content {
++  line-height: 1.8;
++  font-size: 15px;
++  color: #303133;
++}
++</style>
+diff --git a/frontend_user/src/api/bid/hotnews.js b/frontend_user/src/api/bid/hotnews.js
+new file mode 100644
+index 0000000..086fd2f
+--- /dev/null
++++ b/frontend_user/src/api/bid/hotnews.js
+@@ -0,0 +1,42 @@
++import request from '@/utils/request'
++
++// 用户端查询新闻列表
++export function listHotnews(query) {
++  return request({
++    url: '/bid/hotnews/front/list',
++    method: 'get',
++    params: query
++  })
++}
++
++// 用户端查询新闻详情
++export function getHotnews(id) {
++  return request({
++    url: '/bid/hotnews/front/' + id,
++    method: 'get'
++  })
++}
++
++// 用户端查询热点排行
++export function getHotRank() {
++  return request({
++    url: '/bid/hotnews/front/rank',
++    method: 'get'
++  })
++}
++
++// 点赞
++export function likeHotnews(id) {
++  return request({
++    url: '/bid/hotnews/front/like/' + id,
++    method: 'post'
++  })
++}
++
++// 取消点赞
++export function unlikeHotnews(id) {
++  return request({
++    url: '/bid/hotnews/front/unlike/' + id,
++    method: 'post'
++  })
++}
+diff --git a/frontend_user/src/layout/components/platform/Header.vue b/frontend_user/src/layout/components/platform/Header.vue
+index f23249b..95cc495 100644
+--- a/frontend_user/src/layout/components/platform/Header.vue
++++ b/frontend_user/src/layout/components/platform/Header.vue
+@@ -5,9 +5,10 @@
+         <img src="@/assets/logo/logoImg.png" class="logo"/><span class="title">双碳采购网</span>
+       </div>
+     </router-link>
+-    <el-tabs class="tabs" style="width: 30%;" :stretch="true" @tab-click="handleTabChange">
++    <el-tabs class="tabs" style="width: 40%;" :stretch="true" @tab-click="handleTabChange">
+       <el-tab-pane label="主页" name="index"/>
+       <el-tab-pane label="政策法规" name="policylaw"/>
++      <el-tab-pane label="热点新闻" name="news"/>
+       <el-tab-pane label="违规投诉" name="/complaint/list"/>
+     </el-tabs>
+ 
+@@ -74,7 +75,7 @@ export default {
+   components: { BidMessageList },
+   data() {
+     return {
+-      routers: ['/index', '/policylaw/list', '/complaint/list', '/member/list']
++      routers: ['/index', '/policylaw/list', '/news/list', '/complaint/list', '/member/list']
+     }
+   },
+   methods: {
+diff --git a/frontend_user/src/router/index.js b/frontend_user/src/router/index.js
+index 80899f5..9dad94a 100644
+--- a/frontend_user/src/router/index.js
++++ b/frontend_user/src/router/index.js
+@@ -114,6 +114,14 @@ export const constantRoutes = [
+           {
+             path: '/complaint/detail',
+             component: () => import('@/views/complaint/detail.vue')
++          },
++          {
++            path: '/news/list',
++            component: () => import('@/views/news/list.vue')
++          },
++          {
++            path: '/news/detail',
++            component: () => import('@/views/news/detail.vue')
+           }
+         ]
+       }
+diff --git a/frontend_user/src/views/news/components/DragCard.vue b/frontend_user/src/views/news/components/DragCard.vue
+new file mode 100644
+index 0000000..4de2a26
+--- /dev/null
++++ b/frontend_user/src/views/news/components/DragCard.vue
+@@ -0,0 +1,143 @@
++<template>
++  <div ref="rootEl" class="drag-slot" :style="slotStyle">
++    <div class="drag-card" :class="{ 'is-fixed': positioned, 'is-collapsed': collapsed }" :style="cardStyle"
++      @click="handleCardClick">
++      <div class="drag-header" @mousedown="handleMouseDown">
++        <slot name="header" />
++      </div>
++      <div class="drag-body">
++        <slot />
++      </div>
++    </div>
++  </div>
++</template>
++
++<script setup>
++const rootEl = ref(null);
++
++let startX = 0;
++let startY = 0;
++let isDragging = false;
++
++const positioned = ref(false);
++const side = ref('none');
++const left = ref(0)
++const top = ref(0)
++const width = ref(0)
++const height = ref(0)
++
++const slotStyle = computed(() => {
++  if (!positioned.value) return {}
++  return { width: `${width.value}px`, height: `${height.value}px` }
++})
++
++const cardStyle = computed(() => {
++  if (!positioned.value) return {}
++  const style = { position: 'fixed', left: `${left.value}px`, /* ... */ }
++  if (collapsed.value) {
++    style.transform = side.value === 'left'
++      ? 'translateX(calc(-100% + 12px))'
++      : 'translateX(calc(100% - 12px))'
++  }
++  return style
++});
++
++function handleMouseDown(e) {
++  if (e.button !== 0) {
++    return;
++  }
++  const el = rootEl.value;
++  if (!el) {
++    return;
++  }
++  const rect = el.getBoundingClientRect()
++  width.value = rect.width;
++  height.value = rect.height;
++  left.value = rect.left;
++  top.value = rect.top;
++  positioned.value = true;
++  collapsed.value = false;
++
++  isDragging = true;
++  moved = false;
++  startX = e.clientX;
++  startY = e.clientY;
++  startLeft = rect.left;
++  startTop = rect.top;
++
++  document.addEventListener('mousemove', handleMouseMove);
++  document.addEventListener('mouseup', handleMouseUp);
++}
++function handleMouseMove(e) {
++  if (!isDragging) return
++  e.preventDefault()
++
++  const dx = e.clientX - startX
++  const dy = e.clientY - startY
++  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true
++
++  left.value = startLeft + dx
++  top.value = startTop + dy
++}
++
++function handleMouseUp() {
++  if (!isDragging) return
++  isDragging = false
++
++  document.documentElement.removeEventListener('mousemove', handleMouseMove)
++  document.documentElement.removeEventListener('mouseup', handleMouseUp)
++
++  const pageWidth = document.documentElement.clientWidth
++
++  if (left.value <= 50) {
++    left.value = 0
++    side.value = 'left'
++    collapsed.value = true
++  } else if (left.value + width.value >= pageWidth - 50) {
++    left.value = pageWidth - width.value
++    side.value = 'right'
++    collapsed.value = true
++  }
++}
++
++function handleCardClick() {
++  if (moved) {
++    moved = false
++    return
++  }
++  if (collapsed.value) collapsed.value = false
++}
++
++onBeforeUnmount(() => {
++  document.documentElement.removeEventListener('mousemove', handleMouseMove)
++  document.documentElement.removeEventListener('mouseup', handleMouseUp)
++})
++
++</script>
++
++<style scoped>
++.drag-slot {
++  flex: none;
++}
++
++.drag-card {
++  background: #ffffff;
++  border-radius: 12px;
++  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
++  overflow: hidden;
++}
++
++.drag-card.is-collapsed {
++  transition: transform 0.25s;
++  cursor: pointer;
++}
++
++.drag-header {
++  cursor: move;
++  user-select: none;
++}
++
++.drag-body {
++  padding: 0 12px 12px;
++}
++</style>
+\ No newline at end of file
+diff --git a/frontend_user/src/views/news/detail.vue b/frontend_user/src/views/news/detail.vue
+new file mode 100644
+index 0000000..ddc9f23
+--- /dev/null
++++ b/frontend_user/src/views/news/detail.vue
+@@ -0,0 +1,150 @@
++<template>
++  <div class="news-detail" v-loading="loading">
++    <el-breadcrumb separator="/" class="breadcrumb">
++      <el-breadcrumb-item :to="{ path: '/news/list' }">热点新闻</el-breadcrumb-item>
++      <el-breadcrumb-item>新闻详情</el-breadcrumb-item>
++    </el-breadcrumb>
++
++    <div class="detail-card" v-if="news.id">
++      <h1 class="title">{{ news.title }}</h1>
++      <div class="meta">
++        <span>分类：{{ categoryLabel(news.category) }}</span>
++        <span>来源：{{ news.source }}</span>
++        <span>发布人：{{ news.publisher }}</span>
++        <span>发布时间：{{ parseTime(news.publishTime, '{y}-{m}-{d} {h}:{i}') }}</span>
++        <span>浏览量：{{ news.viewCount }}</span>
++        <span>点赞量：{{ news.likeCount }}</span>
++        <span>评论数：{{ news.commentCount }}</span>
++      </div>
++      <div class="cover" v-if="news.cover">
++        <img :src="coverUrl(news.cover)" alt="新闻封面" />
++      </div>
++      <div class="content" v-html="news.content"></div>
++      <div class="actions">
++        <el-button :type="liked ? 'info' : 'primary'" @click="handleLike">
++          {{ liked ? '取消点赞' : '点赞' }}
++        </el-button>
++      </div>
++    </div>
++  </div>
++</template>
++
++<script>
++import { getHotnews, likeHotnews, unlikeHotnews } from '@/api/bid/hotnews'
++import { getToken } from '@/utils/auth'
++
++const CATEGORY_MAP = {
++  1: '政策动态',
++  2: '行业资讯',
++  3: '技术前沿',
++  4: '市场趋势',
++  5: '其他'
++}
++
++export default {
++  name: 'NewsDetail',
++  data() {
++    return {
++      news: {},
++      loading: false,
++      liked: false
++    }
++  },
++  mounted() {
++    this.getDetail()
++  },
++  methods: {
++    getDetail() {
++      const id = this.$route.query.id
++      if (!id) return
++      this.loading = true
++      getHotnews(id).then(res => {
++        this.news = res.data || {}
++        this.loading = false
++      }).catch(() => {
++        this.loading = false
++      })
++    },
++    categoryLabel(value) {
++      return CATEGORY_MAP[value] || ''
++    },
++    coverUrl(path) {
++      if (!path) return ''
++      if (path.startsWith('http')) return path
++      return import.meta.env.VITE_APP_BASE_API + path
++    },
++    handleLike() {
++      if (!getToken()) {
++        this.$message.warning('请先登录')
++        this.$router.push('/login?redirect=' + this.$route.fullPath)
++        return
++      }
++      const id = this.news.id
++      if (this.liked) {
++        unlikeHotnews(id).then(() => {
++          this.liked = false
++          this.news.likeCount = Math.max((this.news.likeCount || 0) - 1, 0)
++        })
++      } else {
++        likeHotnews(id).then(() => {
++          this.liked = true
++          this.news.likeCount = (this.news.likeCount || 0) + 1
++        })
++      }
++    }
++  }
++}
++</script>
++
++<style scoped>
++.news-detail {
++  padding: 16px 30px 40px;
++  background: #f2f2f2;
++  min-height: calc(100vh - 76px);
++  box-sizing: border-box;
++}
++.breadcrumb {
++  margin-bottom: 14px;
++  text-align: left;
++}
++.detail-card {
++  background: #ffffff;
++  border-radius: 12px;
++  padding: 24px 32px 32px;
++}
++.title {
++  font-size: 24px;
++  text-align: center;
++  margin: 0 0 16px;
++  color: #303133;
++}
++.meta {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 16px;
++  justify-content: center;
++  color: #909399;
++  font-size: 13px;
++  padding-bottom: 16px;
++  border-bottom: 1px solid #ebeef5;
++}
++.cover {
++  text-align: center;
++  margin: 20px 0;
++}
++.cover img {
++  max-width: 100%;
++  max-height: 360px;
++  border-radius: 8px;
++}
++.content {
++  line-height: 1.9;
++  font-size: 15px;
++  color: #303133;
++  text-align: left;
++}
++.actions {
++  margin-top: 28px;
++  text-align: center;
++}
++</style>
+diff --git a/frontend_user/src/views/news/list.vue b/frontend_user/src/views/news/list.vue
+new file mode 100644
+index 0000000..c3a0df0
+--- /dev/null
++++ b/frontend_user/src/views/news/list.vue
+@@ -0,0 +1,436 @@
++<template>
++  <div class="news-home">
++    <!-- 左：新闻分类 -->
++    <drag-card class="col-category">
++      <template #header>
++        <div class="card-head">新闻分类</div>
++      </template>
++      <ul class="category-list">
++        <li
++          v-for="item in categories"
++          :key="item.value"
++          :class="{ active: activeCategory === item.value }"
++          @click="handleCategory(item.value)"
++        >
++          <el-icon><component :is="item.icon" /></el-icon>
++          <span>{{ item.label }}</span>
++        </li>
++      </ul>
++    </drag-card>
++
++    <!-- 中：新闻列表 -->
++    <drag-card class="col-news">
++      <template #header>
++        <div class="card-head news-head">
++          <el-tabs v-model="activeTab" @tab-click="handleTabClick">
++            <el-tab-pane label="推荐" name="recommend" />
++            <el-tab-pane label="最新" name="newest" />
++            <el-tab-pane label="热门" name="hot" />
++          </el-tabs>
++          <div class="search-box">
++            <el-input v-model="keyword" placeholder="请输入新闻标题" clearable style="width: 180px" @keyup.enter="getNewsList" />
++            <el-button type="primary" @click="getNewsList">搜索</el-button>
++          </div>
++        </div>
++      </template>
++      <ul class="news-list" v-loading="loading">
++        <li v-for="item in newsList" :key="item.id" @click="goDetail(item.id)">
++          <el-tag v-if="item.isTop === 1" type="danger" size="small" class="top-tag">置顶</el-tag>
++          <div class="news-main">
++            <div class="news-title">{{ item.title }}</div>
++            <div class="news-summary">{{ item.summary }}</div>
++            <div class="news-meta">
++              <span>{{ item.source }}</span>
++              <span>{{ item.publisher }}</span>
++              <span>{{ parseTime(item.publishTime, '{y}-{m}-{d}') }}</span>
++              <span>浏览 {{ item.viewCount }}</span>
++              <span>点赞 {{ item.likeCount }}</span>
++            </div>
++          </div>
++          <img class="news-cover" :src="coverUrl(item.cover)" alt="" />
++        </li>
++        <li v-if="newsList.length === 0" class="empty">暂无新闻</li>
++      </ul>
++    </drag-card>
++
++    <!-- 右：热点排行 -->
++    <drag-card class="col-rank">
++      <template #header>
++        <div class="card-head">热点排行</div>
++      </template>
++      <ul class="rank-list">
++        <li v-for="(item, index) in rankList" :key="item.id" @click="goDetail(item.id)">
++          <span class="rank-no" :class="'rank-' + (index + 1)">top{{ index + 1 }}</span>
++          <span class="rank-title">{{ item.title }}</span>
++        </li>
++      </ul>
++    </drag-card>
++
++    <!-- 悬浮图标 -->
++    <div
++      class="float-icon"
++      :style="{ left: floatLeft + 'px', top: floatTop + 'px' }"
++      @mousedown="handleFloatDown"
++      @contextmenu.prevent="lockScreen"
++    >
++      <img src="@/assets/images/pic5.png" alt="" />
++    </div>
++
++    <!-- 屏幕锁定 -->
++    <div v-if="locked" class="lock-screen">
++      <img src="@/assets/images/pic1.png" alt="" />
++      <div class="lock-tip">按 ESC 解锁</div>
++    </div>
++  </div>
++</template>
++
++<script>
++import DragCard from './components/DragCard.vue'
++import { listHotnews, getHotRank } from '@/api/bid/hotnews'
++import defaultCover from '@/assets/images/pic-cover.png'
++
++export default {
++  name: 'NewsHome',
++  components: { DragCard },
++  data() {
++    return {
++      categories: [
++        { value: 1, label: '政策动态', icon: 'Document' },
++        { value: 2, label: '行业资讯', icon: 'Reading' },
++        { value: 3, label: '技术前沿', icon: 'Cpu' },
++        { value: 4, label: '市场趋势', icon: 'TrendCharts' },
++        { value: 5, label: '其他', icon: 'More' }
++      ],
++      activeCategory: 1,
++      activeTab: 'recommend',
++      keyword: '',
++      newsList: [],
++      rankList: [],
++      loading: false,
++      locked: false,
++      floatLeft: 0,
++      floatTop: 0,
++      floatDragging: false,
++      floatStartX: 0,
++      floatStartY: 0,
++      floatStartLeft: 0,
++      floatStartTop: 0
++    }
++  },
++  mounted() {
++    this.floatLeft = document.documentElement.clientWidth - 60
++    this.floatTop = document.documentElement.clientHeight - 100
++    window.addEventListener('keydown', this.handleKeydown)
++    this.getNewsList()
++    this.getRankList()
++  },
++  beforeUnmount() {
++    window.removeEventListener('keydown', this.handleKeydown)
++    document.documentElement.removeEventListener('mousemove', this.handleFloatMove)
++    document.documentElement.removeEventListener('mouseup', this.handleFloatUp)
++  },
++  methods: {
++    getNewsList() {
++      this.loading = true
++      listHotnews({
++        pageNum: 1,
++        pageSize: 20,
++        category: this.activeCategory,
++        title: this.keyword,
++        params: { orderBy: this.activeTab }
++      }).then(res => {
++        this.newsList = res.rows
++        this.loading = false
++      }).catch(() => {
++        this.loading = false
++      })
++    },
++    getRankList() {
++      getHotRank().then(res => {
++        this.rankList = res.data || []
++      })
++    },
++    handleCategory(value) {
++      this.activeCategory = value
++      this.getNewsList()
++    },
++    handleTabClick() {
++      this.getNewsList()
++    },
++    goDetail(id) {
++      this.$router.push({ path: '/news/detail', query: { id } })
++    },
++    coverUrl(path) {
++      if (!path) return defaultCover
++      if (path.startsWith('http')) return path
++      return import.meta.env.VITE_APP_BASE_API + path
++    },
++    handleFloatDown(e) {
++      if (e.button !== 0) return
++      this.floatDragging = true
++      this.floatStartX = e.clientX
++      this.floatStartY = e.clientY
++      this.floatStartLeft = this.floatLeft
++      this.floatStartTop = this.floatTop
++      document.documentElement.addEventListener('mousemove', this.handleFloatMove)
++      document.documentElement.addEventListener('mouseup', this.handleFloatUp)
++    },
++    handleFloatMove(e) {
++      if (!this.floatDragging) return
++      e.preventDefault()
++      const maxLeft = document.documentElement.clientWidth - 40
++      const maxTop = document.documentElement.clientHeight - 40
++      this.floatLeft = Math.min(Math.max(this.floatStartLeft + e.clientX - this.floatStartX, 0), maxLeft)
++      this.floatTop = Math.min(Math.max(this.floatStartTop + e.clientY - this.floatStartY, 0), maxTop)
++    },
++    handleFloatUp() {
++      this.floatDragging = false
++      document.documentElement.removeEventListener('mousemove', this.handleFloatMove)
++      document.documentElement.removeEventListener('mouseup', this.handleFloatUp)
++    },
++    lockScreen() {
++      this.locked = true
++    },
++    handleKeydown(e) {
++      if (e.key === 'Escape' && this.locked) {
++        this.locked = false
++      }
++    }
++  }
++}
++</script>
++
++<style scoped>
++.news-home {
++  display: flex;
++  gap: 16px;
++  align-items: flex-start;
++  padding: 16px;
++  background: #f2f2f2;
++  min-height: calc(100vh - 76px);
++  box-sizing: border-box;
++}
++
++.col-category {
++  width: 20%;
++}
++.col-news {
++  width: 50%;
++}
++.col-rank {
++  width: 30%;
++}
++
++.card-head {
++  height: 46px;
++  line-height: 46px;
++  padding: 0 16px;
++  font-size: 16px;
++  font-weight: bold;
++  color: #156f6d;
++  background: linear-gradient(90deg, #fbfdfa 0%, #e8f6f2 100%);
++  border-radius: 12px 12px 0 0;
++}
++
++.category-list {
++  list-style: none;
++  margin: 0;
++  padding: 8px;
++}
++.category-list li {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++  height: 42px;
++  padding: 0 12px;
++  border-radius: 8px;
++  color: #464646;
++  cursor: pointer;
++}
++.category-list li:hover {
++  background: #e6f3ff;
++  color: #1d5fa8;
++}
++.category-list li.active {
++  background: #e6f3ff;
++  color: #1d5fa8;
++}
++
++.news-head {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  padding-right: 12px;
++}
++.news-head :deep(.el-tabs__header) {
++  margin: 0;
++}
++.news-head :deep(.el-tabs__nav-wrap)::after {
++  display: none;
++}
++.news-head :deep(.el-tabs__item) {
++  height: 46px;
++  line-height: 46px;
++  font-size: 15px;
++}
++.news-head :deep(.el-tabs__active-bar) {
++  background: #13b69f;
++}
++.news-head :deep(.el-tabs__item.is-active) {
++  color: #13b69f;
++}
++.search-box {
++  display: flex;
++  gap: 8px;
++}
++
++.news-list {
++  list-style: none;
++  margin: 0;
++  padding: 0;
++}
++.news-list li {
++  display: flex;
++  align-items: flex-start;
++  gap: 12px;
++  padding: 14px 12px;
++  border-bottom: 1px solid #e5e5e5;
++  cursor: pointer;
++  position: relative;
++}
++.news-list li:hover {
++  background: #e6f3ff;
++}
++.news-list li.empty {
++  justify-content: center;
++  color: #999999;
++  cursor: default;
++}
++.news-list li.empty:hover {
++  background: transparent;
++}
++.top-tag {
++  flex: none;
++  margin-top: 2px;
++}
++.news-main {
++  flex: 1;
++  text-align: left;
++  overflow: hidden;
++}
++.news-title {
++  font-size: 15px;
++  font-weight: bold;
++  color: #303133;
++  overflow: hidden;
++  white-space: nowrap;
++  text-overflow: ellipsis;
++}
++.news-summary {
++  margin-top: 6px;
++  font-size: 13px;
++  color: #909399;
++  overflow: hidden;
++  white-space: nowrap;
++  text-overflow: ellipsis;
++}
++.news-meta {
++  margin-top: 8px;
++  font-size: 12px;
++  color: #a8abb2;
++  display: flex;
++  gap: 14px;
++}
++.news-cover {
++  width: 96px;
++  height: 64px;
++  object-fit: cover;
++  border-radius: 6px;
++  flex: none;
++}
++
++.rank-list {
++  list-style: none;
++  margin: 0;
++  padding: 8px;
++}
++.rank-list li {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  padding: 10px 8px;
++  border-bottom: 1px dashed #eeeeee;
++  cursor: pointer;
++}
++.rank-list li:hover .rank-title {
++  color: #13b69f;
++}
++.rank-no {
++  flex: none;
++  width: 46px;
++  font-size: 13px;
++  font-weight: bold;
++  color: #909399;
++  text-align: left;
++}
++.rank-1 {
++  color: #f56c6c;
++}
++.rank-2 {
++  color: #e6a23c;
++}
++.rank-3 {
++  color: #409eff;
++}
++.rank-title {
++  flex: 1;
++  text-align: left;
++  font-size: 14px;
++  color: #303133;
++  overflow: hidden;
++  white-space: nowrap;
++  text-overflow: ellipsis;
++}
++
++.float-icon {
++  position: fixed;
++  width: 40px;
++  height: 40px;
++  border-radius: 50%;
++  overflow: hidden;
++  cursor: move;
++  z-index: 300;
++  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
++}
++.float-icon img {
++  width: 40px;
++  height: 40px;
++  user-select: none;
++  pointer-events: none;
++}
++
++.lock-screen {
++  position: fixed;
++  left: 0;
++  top: 0;
++  width: 100vw;
++  height: 100vh;
++  background: #000000;
++  z-index: 9999;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++}
++.lock-screen img {
++  max-width: 100%;
++  max-height: 100%;
++}
++.lock-tip {
++  position: absolute;
++  bottom: 40px;
++  width: 100%;
++  text-align: center;
++  color: #ffffff;
++  font-size: 14px;
++}
++</style>
+diff --git a/sql/hotnews.sql b/sql/hotnews.sql
+new file mode 100644
+index 0000000..3b1b542
+--- /dev/null
++++ b/sql/hotnews.sql
+@@ -0,0 +1,54 @@
++-- ----------------------------
++-- 任务5 热点新闻
++-- ----------------------------
++
++DROP TABLE IF EXISTS `bid_hot_news`;
++CREATE TABLE `bid_hot_news` (
++  `id` bigint NOT NULL COMMENT '主键',
++  `title` varchar(200) NOT NULL DEFAULT '' COMMENT '新闻标题',
++  `category` smallint NOT NULL DEFAULT 1 COMMENT '新闻分类 1政策动态 2行业资讯 3技术前沿 4市场趋势 5其他',
++  `cover` varchar(255) DEFAULT NULL COMMENT '新闻封面',
++  `summary` varchar(500) DEFAULT NULL COMMENT '新闻简介',
++  `content` longtext NOT NULL COMMENT '新闻正文',
++  `source` varchar(100) DEFAULT '' COMMENT '新闻来源',
++  `publisher` varchar(100) DEFAULT '' COMMENT '发布人',
++  `publish_time` datetime DEFAULT NULL COMMENT '发布时间',
++  `is_top` smallint DEFAULT 0 COMMENT '是否置顶 0否 1是',
++  `status` smallint DEFAULT 0 COMMENT '新闻状态 0草稿 1已发布 2已下线',
++  `view_count` int DEFAULT 0 COMMENT '浏览量',
++  `like_count` int DEFAULT 0 COMMENT '点赞量',
++  `comment_count` int DEFAULT 0 COMMENT '评论数',
++  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
++  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
++  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
++  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
++  `remark` varchar(500) DEFAULT '' COMMENT '备注',
++  PRIMARY KEY (`id`),
++  KEY `idx_hot_news_status` (`status`),
++  KEY `idx_hot_news_category` (`category`)
++) ENGINE = InnoDB DEFAULT CHARSET = utf8mb3 COMMENT = '热点新闻表';
++
++-- ----------------------------
++-- 初始数据 10 条
++-- ----------------------------
++INSERT INTO `bid_hot_news` (`id`, `title`, `category`, `cover`, `summary`, `content`, `source`, `publisher`, `publish_time`, `is_top`, `status`, `view_count`, `like_count`, `comment_count`, `create_by`, `create_time`) VALUES
++(9001, '全国碳市场扩容方案落地，钢铁建材行业纳入交易', 1, NULL, '生态环境部发布碳市场扩容实施细则，钢铁、建材行业将于年内纳入配额管理。', '<p>生态环境部近日印发全国碳排放权交易市场扩容实施细则，明确钢铁、建材两个行业将在年内分批纳入配额管理，覆盖重点排放单位超过三千家。</p><p>细则提出，新增行业采用基准法与历史法相结合的配额分配方式，并对先进产能给予适度倾斜。</p>', '生态环境部', 'admin', '2026-01-08 09:20:00', 1, 1, 1280, 96, 12, 'admin', '2026-01-08 09:20:00'),
++(9002, '绿色采购目录更新，低碳产品优先进入政府采购清单', 1, NULL, '财政部等三部门联合发布新版绿色采购目录，低碳产品被列为优先采购对象。', '<p>新版绿色采购目录在原有基础上新增十二个品类，覆盖办公设备、建筑材料与运输服务。</p><p>目录要求采购人在同等条件下优先选择碳足迹标签产品，并在评分环节设置绿色加分项。</p>', '财政部', 'admin', '2026-01-06 14:05:00', 0, 1, 964, 71, 8, 'admin', '2026-01-06 14:05:00'),
++(9003, '供应链碳排放核算标准征求意见，覆盖范围三排放', 1, NULL, '标准首次将范围三排放纳入核算要求，采购环节成为重点。', '<p>相关标准化技术委员会就供应链碳排放核算指南公开征求意见，指南首次将范围三排放明确纳入核算边界。</p><p>指南建议企业建立供应商碳排放数据台账，按采购金额与排放强度双重维度评估。</p>', '中国标准化研究院', 'admin', '2026-01-03 10:30:00', 0, 1, 812, 65, 5, 'admin', '2026-01-03 10:30:00'),
++(9004, '数字化采购平台渗透率突破四成，集采效率明显提升', 2, NULL, '行业报告显示企业数字化采购平台渗透率已达 42%，采购周期平均缩短三成。', '<p>最新行业报告指出，企业数字化采购平台渗透率已达百分之四十二，集中采购的平均周期缩短约三成。</p><p>报告同时提示，数据孤岛仍是制约采购数字化的主要障碍。</p>', '中国物流与采购联合会', 'admin', '2026-01-02 16:40:00', 1, 1, 1576, 132, 21, 'admin', '2026-01-02 16:40:00'),
++(9005, '中小企业采购数字化转型扶持计划启动', 2, NULL, '多地推出专项扶持计划，为中小企业采购系统改造提供补贴。', '<p>多地工信部门联合推出中小企业采购数字化转型扶持计划，对采购管理系统改造给予最高三成补贴。</p><p>计划首期覆盖五千家企业，重点支持电子招投标与供应商协同场景。</p>', '工业和信息化部', 'admin', '2025-12-30 11:15:00', 0, 1, 683, 48, 4, 'admin', '2025-12-30 11:15:00'),
++(9006, '电子招投标全流程在线化率超过九成', 2, NULL, '公共资源交易平台数据显示电子招投标全流程在线化率已达 91%。', '<p>全国公共资源交易平台统计显示，电子招投标全流程在线化率已达百分之九十一，纸质标书基本退出主流场景。</p><p>远程异地评标覆盖率同步提升，跨区域协同评审成为常态。</p>', '国家发展改革委', 'admin', '2025-12-26 09:00:00', 0, 1, 541, 33, 2, 'admin', '2025-12-26 09:00:00'),
++(9007, '区块链存证技术在采购合同场景规模化应用', 3, NULL, '多家企业将区块链存证用于采购合同签署，纠纷处理周期显著缩短。', '<p>区块链存证技术已在采购合同签署环节实现规模化应用，合同验签时间从数天缩短至分钟级。</p><p>应用方表示，存证节点覆盖采购方、供应商与第三方审计机构。</p>', '中国电子技术标准化研究院', 'admin', '2025-12-22 15:30:00', 0, 1, 1204, 108, 16, 'admin', '2025-12-22 15:30:00'),
++(9008, '智能比价模型上线，采购寻源效率提升五成', 3, NULL, '基于历史成交数据的智能比价模型投入使用，寻源环节耗时明显下降。', '<p>基于历史成交数据训练的智能比价模型正式上线，可在寻源阶段自动生成价格区间建议。</p><p>试点企业反馈，寻源环节平均耗时下降约五成。</p>', '中国招标投标协会', 'admin', '2025-12-18 13:20:00', 0, 1, 742, 59, 7, 'admin', '2025-12-18 13:20:00'),
++(9009, '钢材价格震荡上行，采购端锁价策略受关注', 4, NULL, '受原料成本推动钢材价格震荡上行，采购端锁价与长约策略受到关注。', '<p>近期钢材价格震荡上行，采购企业开始通过锁价合同与长约协议对冲价格波动风险。</p><p>分析人士建议结合库存周转率动态调整采购节奏。</p>', '中国钢铁工业协会', 'admin', '2025-12-15 10:10:00', 0, 1, 918, 62, 9, 'admin', '2025-12-15 10:10:00'),
++(9010, '绿色低碳产品采购规模同比增长三成', 5, NULL, '统计显示绿色低碳产品采购规模同比增长 30%，环保设备增幅居前。', '<p>年度统计数据显示，绿色低碳产品采购规模同比增长百分之三十，其中环保设备与节能电机增幅居前。</p><p>采购方普遍将碳足迹指标纳入供应商准入条件。</p>', '中国采购与招标网', 'admin', '2025-12-10 08:45:00', 0, 0, 0, 0, 0, 'admin', '2025-12-10 08:45:00');
++
++-- ----------------------------
++-- 菜单与按钮权限
++-- ----------------------------
++INSERT INTO `sys_menu` VALUES (2900, '热点新闻', 2798, 2, 'hotnews', 'bid/hotnews/index', 1, 0, 'C', '0', '0', 'bid:hotnews:list', 'message', 'admin', '2026-01-08 09:00:00', '', NULL, '热点新闻菜单');
++INSERT INTO `sys_menu` VALUES (2901, '热点新闻查询', 2900, 1, '#', '', 1, 0, 'F', '0', '0', 'bid:hotnews:query', '#', 'admin', '2026-01-08 09:00:00', '', NULL, '');
++INSERT INTO `sys_menu` VALUES (2902, '热点新闻新增', 2900, 2, '#', '', 1, 0, 'F', '0', '0', 'bid:hotnews:add', '#', 'admin', '2026-01-08 09:00:00', '', NULL, '');
++INSERT INTO `sys_menu` VALUES (2903, '热点新闻修改', 2900, 3, '#', '', 1, 0, 'F', '0', '0', 'bid:hotnews:edit', '#', 'admin', '2026-01-08 09:00:00', '', NULL, '');
++INSERT INTO `sys_menu` VALUES (2904, '热点新闻删除', 2900, 4, '#', '', 1, 0, 'F', '0', '0', 'bid:hotnews:remove', '#', 'admin', '2026-01-08 09:00:00', '', NULL, '');
++INSERT INTO `sys_menu` VALUES (2905, '热点新闻导出', 2900, 5, '#', '', 1, 0, 'F', '0', '0', 'bid:hotnews:export', '#', 'admin', '2026-01-08 09:00:00', '', NULL, '');
